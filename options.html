@@ -61,15 +61,16 @@
 </head>
 <body>
   <h1>Quarterly settings</h1>
-  <p class="sub">Your key is stored locally in this browser and only sent to api.anthropic.com.</p>
+  <p class="sub">Your key is stored locally in this browser and only sent to generativelanguage.googleapis.com.</p>
 
-  <label for="api-key">Anthropic API key</label>
-  <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+  <label for="api-key">Gemini API key</label>
+  <input type="password" id="api-key" placeholder="AIza..." autocomplete="off" spellcheck="false">
   <button id="save-btn" type="button">Save</button>
   <p id="status"></p>
 
   <div class="note">
-    Get a key from the <a href="https://platform.claude.com/" target="_blank" rel="noreferrer">Anthropic Console</a>.
+    Get a free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>
+    (sign in with a Google account and click "Create API key" — no billing required for the free tier).
     Heads-up: keys stored in a browser extension are fine for personal use, but public
     distribution of this extension would require a backend proxy instead.
   </div>

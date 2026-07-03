@@ -4,8 +4,8 @@ A Chrome extension for financial advisors that drafts personalized client review
 market-update summaries in seconds. Fill in a short form, hit **Generate Draft**, and
 get a clean 3–4 paragraph letter you can copy into an email or client letter.
 
-Powered by the Anthropic API (`claude-sonnet-5`), called directly from the popup with
-your own API key.
+Powered by the Google Gemini API (`gemini-2.5-flash`), called directly from the popup
+with your own API key — the free tier is enough for personal use.
 
 ## Install (load unpacked)
 
@@ -19,13 +19,14 @@ your own API key.
 
 ## Set your API key
 
-1. Right-click the Quarterly icon → **Options** (or click "Open settings" in the popup).
-2. Paste your Anthropic API key (`sk-ant-...`) — get one from the
-   [Anthropic Console](https://platform.claude.com/).
-3. Click **Save**.
+1. Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) —
+   sign in with a Google account and click **Create API key**. No billing setup is
+   required for the free tier.
+2. Right-click the Quarterly icon → **Options** (or click "Open settings" in the popup).
+3. Paste the key (`AIza...`) and click **Save**.
 
 The key is stored in `chrome.storage.local` on your machine and is only ever sent to
-`api.anthropic.com`.
+`generativelanguage.googleapis.com`.
 
 ## Use it
 
@@ -56,6 +57,6 @@ placeholders. Always review the draft before sending; you're the advisor of reco
 
 | File | Purpose |
 | --- | --- |
-| `manifest.json` | Manifest V3 config, host permission for `api.anthropic.com` |
+| `manifest.json` | Manifest V3 config, host permission for `generativelanguage.googleapis.com` |
 | `popup.html` / `popup.css` / `popup.js` | The form, streaming generation, copy/regenerate |
 | `options.html` / `options.js` | API key settings page |

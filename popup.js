@@ -1,13 +1,14 @@
 // Quarterly — popup logic.
 //
-// API KEY NOTE: For this v0 the Anthropic API key is user-supplied and stored in
+// API KEY NOTE: For this v0 the Gemini API key is user-supplied and stored in
 // chrome.storage.local (set via the options page). For public distribution this
 // must be replaced with a backend proxy that holds the key server-side — a
 // browser extension cannot keep a bundled key secret. That's a later step;
 // don't build it now.
 
-const API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-5";
+const MODEL = "gemini-2.5-flash";
+// alt=sse makes the endpoint stream Server-Sent Events instead of a JSON array.
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
 
 const SYSTEM_PROMPT = `You are ghostwriting a quarterly client letter on behalf of a financial advisor. You write AS the advisor, in the first person, addressing their client directly.
 
@@ -40,9 +41,9 @@ let apiKey = null;
 let lastFormData = null;
 
 // ---------- Init ----------
-chrome.storage.local.get("anthropicApiKey", ({ anthropicApiKey }) => {
-  if (anthropicApiKey) {
-    apiKey = anthropicApiKey;
+chrome.storage.local.get("geminiApiKey", ({ geminiApiKey }) => {
+  if (geminiApiKey) {
+    apiKey = geminiApiKey;
   } else {
     noKeyNotice.classList.remove("hidden");
     generateBtn.disabled = true;
@@ -112,20 +113,17 @@ async function generateDraft(formData) {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        // Required for direct browser -> Anthropic API calls (CORS opt-in).
-        "anthropic-dangerous-direct-browser-access": "true",
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1024,
-        stream: true,
-        // Thinking off: the full 1024-token budget goes to the letter and the
-        // first words appear immediately.
-        thinking: { type: "disabled" },
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildUserPrompt(formData) }],
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: "user", parts: [{ text: buildUserPrompt(formData) }] }],
+        generationConfig: {
+          maxOutputTokens: 1024,
+          // Thinking off: the full token budget goes to the letter and the
+          // first words appear immediately.
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
 
@@ -143,7 +141,9 @@ async function generateDraft(formData) {
   }
 }
 
-// Parse the SSE stream and append text deltas to the output as they arrive.
+// Parse the SSE stream and append text chunks to the output as they arrive.
+// Each `data:` line is a GenerateContentResponse with the next slice of text at
+// candidates[0].content.parts[].text.
 async function streamResponse(response) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -157,24 +157,41 @@ async function streamResponse(response) {
     const lines = buffer.split("\n");
     buffer = lines.pop(); // keep any partial line for the next chunk
 
-    for (const line of lines) {
+    for (const rawLine of lines) {
+      const line = rawLine.replace(/\r$/, "");
       if (!line.startsWith("data: ")) continue;
-      let event;
+      let chunk;
       try {
-        event = JSON.parse(line.slice(6));
+        chunk = JSON.parse(line.slice(6));
       } catch {
         continue; // ignore malformed keep-alive fragments
       }
 
-      if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
-        outputEl.textContent += event.delta.text;
-        outputEl.scrollTop = outputEl.scrollHeight;
-      } else if (event.type === "error") {
-        throw new Error(event.error?.message || "The API returned an error mid-stream.");
-      } else if (event.type === "message_delta" && event.delta?.stop_reason === "max_tokens") {
+      if (chunk.error) {
+        throw new Error(chunk.error.message || "The API returned an error mid-stream.");
+      }
+
+      // Prompt blocked by safety filters before any text was generated.
+      if (chunk.promptFeedback?.blockReason) {
+        throw new Error(
+          `The model declined to write this draft (${chunk.promptFeedback.blockReason}). Try rewording your market notes.`
+        );
+      }
+
+      const candidate = chunk.candidates?.[0];
+      if (!candidate) continue;
+
+      for (const part of candidate.content?.parts || []) {
+        if (part.text) {
+          outputEl.textContent += part.text;
+          outputEl.scrollTop = outputEl.scrollHeight;
+        }
+      }
+
+      if (candidate.finishReason === "MAX_TOKENS") {
         outputEl.textContent +=
           "\n\n[Draft was cut off at the length limit — hit Regenerate for a fresh attempt.]";
-      } else if (event.type === "message_delta" && event.delta?.stop_reason === "refusal") {
+      } else if (candidate.finishReason === "SAFETY" || candidate.finishReason === "PROHIBITED_CONTENT") {
         throw new Error("The model declined to write this draft. Try rewording your market notes.");
       }
     }
@@ -190,11 +207,15 @@ async function formatApiError(response) {
     /* non-JSON error body */
   }
 
-  if (response.status === 401) {
-    return "Your API key was rejected (401). Check it in settings.";
+  // Gemini reports an invalid key as 400 "API key not valid..." (403 for key restrictions).
+  if (response.status === 400 && /api key/i.test(detail)) {
+    return "Your API key was rejected. Check it in settings.";
+  }
+  if (response.status === 403) {
+    return `Access denied (403)${detail ? `: ${detail}` : ""}. Check your API key in settings.`;
   }
   if (response.status === 429) {
-    return "Rate limited (429). Wait a moment and try again.";
+    return "Rate limited (429). Wait a moment and try again — the free tier allows a limited number of requests per minute.";
   }
   return `API error ${response.status}${detail ? `: ${detail}` : ""}`;
 }

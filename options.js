@@ -1,4 +1,4 @@
-// Quarterly — options page. Stores the user's Anthropic API key in
+// Quarterly — options page. Stores the user's Gemini API key in
 // chrome.storage.local. See the API KEY NOTE in popup.js: this user-supplied
 // key setup is a v0 choice; public distribution needs a backend proxy.
 
@@ -7,9 +7,9 @@ const saveBtn = document.getElementById("save-btn");
 const status = document.getElementById("status");
 
 // Show the saved key (masked by the password input) so the user can tell one is set.
-chrome.storage.local.get("anthropicApiKey", ({ anthropicApiKey }) => {
-  if (anthropicApiKey) {
-    input.value = anthropicApiKey;
+chrome.storage.local.get("geminiApiKey", ({ geminiApiKey }) => {
+  if (geminiApiKey) {
+    input.value = geminiApiKey;
     setStatus("A key is currently saved.", "ok");
   }
 });
@@ -18,18 +18,18 @@ saveBtn.addEventListener("click", () => {
   const key = input.value.trim();
 
   if (!key) {
-    chrome.storage.local.remove("anthropicApiKey", () => {
+    chrome.storage.local.remove("geminiApiKey", () => {
       setStatus("Key removed.", "ok");
     });
     return;
   }
 
-  if (!key.startsWith("sk-ant-")) {
-    setStatus('That doesn\'t look like an Anthropic API key (expected it to start with "sk-ant-").', "err");
+  if (!key.startsWith("AIza")) {
+    setStatus('That doesn\'t look like a Gemini API key (expected it to start with "AIza").', "err");
     return;
   }
 
-  chrome.storage.local.set({ anthropicApiKey: key }, () => {
+  chrome.storage.local.set({ geminiApiKey: key }, () => {
     setStatus("Saved ✓ — you can close this tab and open the popup.", "ok");
   });
 });
