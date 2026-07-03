@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quarterly</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Quarterly</h1>
+    <p class="tagline">Client review drafts in seconds</p>
+  </header>
+
+  <!-- Shown when no API key is configured -->
+  <div id="no-key-notice" class="notice hidden">
+    <p>No API key set. Add your Anthropic API key to get started.</p>
+    <button id="open-options" type="button" class="link-btn">Open settings</button>
+  </div>
+
+  <form id="draft-form">
+    <label for="client-name">Client first name</label>
+    <input type="text" id="client-name" placeholder="e.g. Margaret" required autocomplete="off">
+
+    <label for="portfolio">Portfolio / account type</label>
+    <input type="text" id="portfolio" placeholder="e.g. moderate-risk retirement portfolio" required autocomplete="off">
+
+    <label for="holdings">Notable holdings or context <span class="optional">(optional)</span></label>
+    <input type="text" id="holdings" placeholder="e.g. heavy in dividend stocks, added muni bonds in March" autocomplete="off">
+
+    <label for="market-notes">This quarter's market notes</label>
+    <textarea id="market-notes" rows="5" placeholder="Paste bullet points about what happened in the markets this quarter..." required></textarea>
+
+    <fieldset class="tone-toggle">
+      <legend>Tone</legend>
+      <label class="radio">
+        <input type="radio" name="tone" value="formal" checked>
+        Formal
+      </label>
+      <label class="radio">
+        <input type="radio" name="tone" value="warm">
+        Warm but professional
+      </label>
+    </fieldset>
+
+    <button type="submit" id="generate-btn">Generate Draft</button>
+  </form>
+
+  <div id="error-box" class="error hidden"></div>
+
+  <section id="output-section" class="hidden">
+    <h2>Draft</h2>
+    <div id="output" aria-live="polite"></div>
+    <div class="output-actions">
+      <button type="button" id="copy-btn">Copy to clipboard</button>
+      <button type="button" id="regenerate-btn" class="secondary">Regenerate</button>
+    </div>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Quarterly",
+  "version": "0.1.0",
+  "description": "Drafts personalized client review and market-update summaries for financial advisors in seconds.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Quarterly — draft a client update"
+  },
+  "options_page": "options.html",
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.anthropic.com/"]
+}
